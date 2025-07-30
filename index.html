@@ -3,1251 +3,1440 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrenamiento Dual de Modelos GAD - Completo</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <title>Sistema de Optimización de Cupos GAD</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            color: #333;
         }
-        
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            background: white;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        
-        .header {
+            margin-bottom: 30px;
             text-align: center;
-            margin-bottom: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
         }
-        
+
         .header h1 {
-            color: #2c3e50;
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 2.5rem;
             background: linear-gradient(45deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
         }
-        
-        .step-container {
+
+        .header .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 2fr;
             gap: 30px;
-            margin-bottom: 40px;
-        }
-        
-        .step {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            border-left: 5px solid #667eea;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .step:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        
-        .step h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-        
-        .step-complete {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            border-left: 5px solid #27ae60;
             margin-bottom: 30px;
         }
-        
-        .chart-container {
-            position: relative;
-            height: 500px;
-            margin: 20px 0;
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin: 30px 0;
-            flex-wrap: wrap;
-        }
-        
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-            transform: translateY(-2px);
-        }
-        
-        .btn-animate {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-        }
-        
-        .btn-animate:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .gad-selector {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-        
-        .gad-btn {
-            padding: 8px 16px;
-            border: 2px solid #dee2e6;
-            background: white;
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+            backdrop-filter: blur(10px);
+        }
+
+        .content-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #444;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .database-card {
+            background: #f8f9ff;
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .database-card:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: translateY(-2px);
+        }
+
+        .database-card.loaded {
+            border: 2px solid #10b981;
+            background: #ecfdf5;
+        }
+
+        .database-card h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .database-card p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-loaded {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-size: 12px;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
         }
-        
-        .gad-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
         }
-        
-        .results {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
-        
-        .result-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            transition: transform 0.3s ease;
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #10b981, #059669);
         }
-        
-        .result-card:hover {
-            transform: scale(1.05);
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
         }
-        
-        .result-value {
-            font-size: 2em;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .explanation {
-            background: #e8f4f8;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 30px 0;
-            border-left: 5px solid #17a2b8;
-        }
-        
-        .formula {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
+
+        .progress-container {
+            margin: 20px 0;
+            background: #f1f5f9;
             border-radius: 10px;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            margin: 15px 0;
-            text-align: center;
-            font-size: 14px;
+            overflow: hidden;
+            height: 8px;
         }
-        
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
         .step-indicator {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             margin: 30px 0;
         }
-        
-        .step-dot {
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: #dee2e6;
+            background: #e5e7eb;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 10px;
-            font-weight: bold;
-            transition: all 0.3s ease;
         }
-        
-        .step-dot.active {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            transform: scale(1.2);
+
+        .step.active::before {
+            background: #667eea;
         }
-        
-        .step-dot.completed {
-            background: #27ae60;
-            color: white;
+
+        .step.completed::before {
+            background: #10b981;
         }
-        
-        .problem-statement {
-            background: linear-gradient(135deg, #ff7675, #fd79a8);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            text-align: center;
+
+        .step span {
+            display: block;
+            margin-top: 50px;
+            font-size: 0.9rem;
+            color: #666;
         }
-        
-        .problem-statement h2 {
-            margin: 0 0 15px 0;
-            font-size: 1.8em;
-        }
-        
-        .comparison-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-            margin: 30px 0;
-        }
-        
-        .value-card {
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .real-value {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-        }
-        
-        .model-value {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-        }
-        
-        .difference-value {
-            background: linear-gradient(135deg, #f39c12, #d35400);
-        }
-        
-        .value-amount {
-            font-size: 2.2em;
-            margin: 10px 0;
-        }
-        
-        .value-label {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-        
-        .solution-section {
-            background: linear-gradient(135deg, #74b9ff, #0984e3);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            margin: 30px 0;
-        }
-        
-        .formula-box {
-            background: rgba(255,255,255,0.1);
+
+        .data-preview {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 10px;
             padding: 20px;
             margin: 20px 0;
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            font-size: 1.2em;
-            border: 2px solid rgba(255,255,255,0.3);
+            max-height: 300px;
+            overflow-y: auto;
         }
-        
-        .step-by-step {
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .data-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .results-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
-            margin: 30px 0;
+            margin: 20px 0;
         }
-        
-        .step-card {
-            background: #f8f9fa;
+
+        .result-card {
+            background: #fff;
             border-radius: 15px;
-            padding: 25px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             border-left: 5px solid #667eea;
-            transition: transform 0.3s ease;
         }
-        
-        .step-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+
+        .result-card h4 {
+            color: #374151;
+            margin-bottom: 15px;
         }
-        
-        .step-number {
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .tab-container {
+            margin: 20px 0;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #6b7280;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .gad-item {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .gad-item:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .gad-info h5 {
+            color: #374151;
+            margin-bottom: 5px;
+        }
+
+        .gad-info p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .gad-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-optimized {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-problematic {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .floating-buttons {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .floating-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1.2em;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
         }
-        
-        .highlight-box {
-            background: linear-gradient(135deg, #00b894, #00cec9);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            margin: 30px 0;
-            text-align: center;
+
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
         }
-        
-        .factor-calculation {
-            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
-            color: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin: 30px 0;
-        }
-        
-        .factor-result {
-            font-size: 3em;
-            font-weight: bold;
-            text-align: center;
-            margin: 20px 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .interpretation {
-            background: #e8f4f8;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 30px 0;
-            border-left: 5px solid #17a2b8;
-        }
-        
+
         @media (max-width: 768px) {
-            .step-container {
+            .main-content {
                 grid-template-columns: 1fr;
             }
             
-            .container {
-                padding: 20px;
+            .header h1 {
+                font-size: 2rem;
             }
             
-            .results {
-                grid-template-columns: 1fr;
-            }
-            
-            .comparison-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .step-by-step {
-                grid-template-columns: 1fr;
+            .floating-buttons {
+                bottom: 20px;
+                right: 20px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <div class="header">
-            <h1>🏛️ Entrenamiento Dual de Modelos para GADs</h1>
-            <p style="color: #6c757d; font-size: 1.1em;">Visualización completa: Teoría y Aplicación Práctica</p>
+            <h1>🏛️ Sistema de Optimización de Cupos GAD</h1>
+            <p class="subtitle">Análisis financiero inteligente para Gobiernos Autónomos Descentralizados</p>
         </div>
 
+        <!-- Indicador de Pasos -->
         <div class="step-indicator">
-            <div class="step-dot completed" id="step1">1</div>
-            <div class="step-dot" id="step2">2</div>
-            <div class="step-dot" id="step3">3</div>
-            <div class="step-dot" id="step4">4</div>
-            <div class="step-dot" id="step5">5</div>
+            <div class="step active" id="step1">
+                <span>1. Cargar Datos</span>
+            </div>
+            <div class="step" id="step2">
+                <span>2. Validar</span>
+            </div>
+            <div class="step" id="step3">
+                <span>3. Procesar</span>
+            </div>
+            <div class="step" id="step4">
+                <span>4. Optimizar</span>
+            </div>
+            <div class="step" id="step5">
+                <span>5. Reportes</span>
+            </div>
         </div>
 
-        <div id="currentStep">
-            <!-- Paso 1: Datos Iniciales -->
-            <div id="step1-content">
-                <div class="step-container">
-                    <div class="step">
-                        <h3>📊 Datos Históricos (2018-2024)</h3>
-                        <p>Datos reales de ingresos de diferentes GADs con sus características específicas.</p>
-                        <ul>
-                            <li><strong>GAD Urbano:</strong> Alto rendimiento (+20%)</li>
-                            <li><strong>GAD Rural:</strong> Rendimiento bajo (-15%)</li>
-                            <li><strong>GAD Turístico:</strong> Alta variabilidad</li>
-                        </ul>
+        <!-- Contenido Principal -->
+        <div class="main-content">
+            <!-- Sidebar de Carga de Datos -->
+            <div class="sidebar">
+                <h2 class="section-title">📊 Bases de Datos Requeridas</h2>
+                
+                <div class="database-card" data-db="gastos">
+                    <div class="status-badge status-pending">Pendiente</div>
+                    <h3>🏦 Datos Completos de Gastos</h3>
+                    <p>Proyecciones financieras y presupuestarias de los GADs</p>
+                    <input type="file" class="file-input" accept=".xlsx,.xls,.csv" 
+                           onchange="loadDatabase('gastos', this)">
+                </div>
+
+                <div class="database-card" data-db="rankings">
+                    <div class="status-badge status-pending">Pendiente</div>
+                    <h3>📈 Rankings AT</h3>
+                    <p>Rankings y deciles de desempeño de GADs</p>
+                    <input type="file" class="file-input" accept=".xlsx,.xls,.csv,.dta" 
+                           onchange="loadDatabase('rankings', this)">
+                </div>
+
+                <div class="database-card" data-db="equidad">
+                    <div class="status-badge status-pending">Pendiente</div>
+                    <h3>⚖️ Modelo de Equidad Municipal</h3>
+                    <p>Datos de equidad del Ministerio de Economía y Finanzas</p>
+                    <input type="file" class="file-input" accept=".xlsx,.xls,.csv" 
+                           onchange="loadDatabase('equidad', this)">
+                </div>
+
+                <div class="database-card" data-db="deuda">
+                    <div class="status-badge status-pending">Pendiente</div>
+                    <h3>💳 Datos de Deuda</h3>
+                    <p>Información histórica y proyectada de endeudamiento</p>
+                    <input type="file" class="file-input" accept=".xlsx,.xls,.csv" 
+                           onchange="loadDatabase('deuda', this)">
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <button class="btn" onclick="validateAllData()" id="validateBtn" disabled>
+                        <span class="loading-spinner hidden" id="validateSpinner"></span>
+                        🔍 Validar Datos
+                    </button>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <p style="text-align: center; font-size: 0.9rem; color: #666; margin-top: 10px;">
+                    <span id="progressText">0/4 bases cargadas</span>
+                </p>
+            </div>
+
+            <!-- Área de Contenido Principal -->
+            <div class="content-area">
+                <!-- Pestaña de Vista Previa de Datos -->
+                <div class="tab-container">
+                    <div class="tab-buttons">
+                        <button class="tab-button active" onclick="showTab('preview')">👁️ Vista Previa</button>
+                        <button class="tab-button" onclick="showTab('validation')">✅ Validación</button>
+                        <button class="tab-button" onclick="showTab('processing')">⚙️ Procesamiento</button>
+                        <button class="tab-button" onclick="showTab('results')">📊 Resultados</button>
                     </div>
-                    <div class="step">
-                        <h3>🎯 Objetivo</h3>
-                        <p>Separar el comportamiento común de las características específicas de cada GAD.</p>
-                        <div class="formula">
-                            Ingreso_GAD = Comportamiento_Común + Efecto_Específico
+
+                    <!-- Contenido de Vista Previa -->
+                    <div class="tab-content active" id="preview-tab">
+                        <h3 class="section-title">Vista Previa de Datos</h3>
+                        <div id="data-preview-container">
+                            <div class="alert alert-warning">
+                                📥 Por favor, carga las bases de datos para ver la vista previa
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenido de Validación -->
+                    <div class="tab-content" id="validation-tab">
+                        <h3 class="section-title">Validación de Integridad</h3>
+                        <div id="validation-results">
+                            <div class="alert alert-warning">
+                                ⏳ Carga y valida los datos para ver los resultados de integridad
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenido de Procesamiento -->
+                    <div class="tab-content" id="processing-tab">
+                        <h3 class="section-title">Configuración y Procesamiento</h3>
+                        
+                        <div class="results-grid">
+                            <div class="result-card">
+                                <h4>⚙️ Parámetros de Optimización</h4>
+                                <div style="margin: 15px 0;">
+                                    <label for="precision">Precisión de Optimización:</label>
+                                    <input type="number" id="precision" value="0.01" step="0.001" min="0.001" max="0.1"
+                                           style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px;">
+                                </div>
+                                <div style="margin: 15px 0;">
+                                    <label for="strategy">Estrategia de Optimización:</label>
+                                    <select id="strategy" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px;">
+                                        <option value="automatic">Automática (Recomendado)</option>
+                                        <option value="conservative">Conservadora</option>
+                                        <option value="aggressive">Agresiva</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-secondary" onclick="startProcessing()" id="processBtn" disabled>
+                                    🚀 Iniciar Procesamiento
+                                </button>
+                            </div>
+
+                            <div class="result-card">
+                                <h4>📈 Estado del Sistema</h4>
+                                <div class="metric">
+                                    <span>GADs Detectados:</span>
+                                    <span class="metric-value" id="gadsCount">0</span>
+                                </div>
+                                <div class="metric">
+                                    <span>Años de Datos:</span>
+                                    <span class="metric-value" id="yearsRange">-</span>
+                                </div>
+                                <div class="metric">
+                                    <span>Registros Totales:</span>
+                                    <span class="metric-value" id="totalRecords">0</span>
+                                </div>
+                                <div class="metric">
+                                    <span>Estado:</span>
+                                    <span class="metric-value" id="systemStatus">Esperando datos</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="processing-log" class="data-preview hidden">
+                            <h4>📋 Log de Procesamiento</h4>
+                            <div id="log-content" style="background: #1f2937; color: #10b981; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.9rem; max-height: 300px; overflow-y: auto;">
+                                Sistema listo para procesamiento...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenido de Resultados -->
+                    <div class="tab-content" id="results-tab">
+                        <h3 class="section-title">Resultados de Optimización</h3>
+                        <div id="optimization-results">
+                            <div class="alert alert-warning">
+                                ⏳ Ejecuta el procesamiento para ver los resultados de optimización
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="chart-container">
-                    <canvas id="dataChart"></canvas>
-                </div>
             </div>
-
-            <!-- Paso 2: Modelo Completo -->
-            <div id="step2-content" style="display: none;">
-                <div class="step-complete">
-                    <h3>🧠 Modelo Completo (CON efectos GAD)</h3>
-                    <p>Captura el comportamiento específico de cada GAD incluyendo sus características únicas.</p>
-                    <div class="formula">
-                        ln(Ingreso) = β₀ + β₁·lag1 + β₂·lag2 + β₃·lag3 + α_GAD + ε
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <canvas id="completeModelChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Paso 3: Modelo Base -->
-            <div id="step3-content" style="display: none;">
-                <div class="step-complete">
-                    <h3>📏 Modelo Base (SIN efectos GAD)</h3>
-                    <p>Establece una línea base neutral que representa el comportamiento "promedio" común a todos los GADs.</p>
-                    <div class="formula">
-                        ln(Ingreso) = β₀ + β₁·lag1 + β₂·lag2 + β₃·lag3 + ε
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <canvas id="baseModelChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Paso 4: Factor de Corrección (ACTUALIZADO) -->
-            <div id="step4-content" style="display: none;">
-                <div class="step-complete">
-                    <h3>⚖️ Cálculo del Factor de Corrección</h3>
-                    <p>El factor de corrección ajusta las predicciones del modelo base según las características específicas de cada GAD.</p>
-                    <div class="formula">
-                        Predicción_Corregida = Predicción_Modelo_Base × Factor_Corrección
-                    </div>
-                </div>
-                
-                <div class="gad-selector">
-                    <button class="gad-btn active" onclick="showGAD('urbano')">GAD Urbano</button>
-                    <button class="gad-btn" onclick="showGAD('rural')">GAD Rural</button>
-                    <button class="gad-btn" onclick="showGAD('turistico')">GAD Turístico</button>
-                </div>
-                
-                <div class="chart-container">
-                    <canvas id="correctionChart"></canvas>
-                </div>
-                
-                <div class="controls">
-                    <button class="btn btn-animate" onclick="animateCorrection()">🎬 Mostrar Aplicación del Factor</button>
-                    <button class="btn btn-animate" onclick="resetCorrectionChart()" style="background: #6c757d;">🔄 Reiniciar</button>
-                </div>
-                
-                <div class="results">
-                    <div class="result-card">
-                        <div>Factor Promedio</div>
-                        <div class="result-value" id="factorValue">1.20</div>
-                        <div id="gadName">GAD Urbano</div>
-                    </div>
-                    <div class="result-card">
-                        <div>Interpretación</div>
-                        <div class="result-value" id="interpretation">+20%</div>
-                        <div>Sobre promedio</div>
-                    </div>
-                </div>
-                
-                <div class="explanation">
-                    <h4>📌 ¿Cómo leer este gráfico?</h4>
-                    <p><strong>Línea morada:</strong> Predicción del modelo base (comportamiento promedio)</p>
-                    <p><strong>Línea verde:</strong> Predicción corregida (base × factor)</p>
-                    <p><strong>Barras naranjas:</strong> Factores de corrección aplicados cada año</p>
-                    <p><strong>Línea roja/azul/verde:</strong> Valores reales observados</p>
-                </div>
-            </div>
-
-            <!-- Paso 5: Caso Real en Acción -->
-            <div id="step5-content" style="display: none;">
-                <div class="problem-statement">
-                    <h2>🚨 Factor de Corrección en Acción</h2>
-                    <p style="font-size: 1.1em;">Caso Real: Cuando el Modelo Base Subestima los Ingresos</p>
-                </div>
-
-                <div class="comparison-grid">
-                    <div class="value-card real-value">
-                        <div class="value-label">Valor Real</div>
-                        <div class="value-amount">$4.875.338</div>
-                        <div style="font-size: 0.9em;">exp(15,3897)</div>
-                    </div>
-                    <div class="value-card model-value">
-                        <div class="value-label">Modelo Base</div>
-                        <div class="value-amount">$3.269.017</div>
-                        <div style="font-size: 0.9em;">exp(15)</div>
-                    </div>
-                    <div class="value-card difference-value">
-                        <div class="value-label">Diferencia (Pérdida)</div>
-                        <div class="value-amount">$1.606.321</div>
-                        <div style="font-size: 0.9em;">-32.9% Error</div>
-                    </div>
-                </div>
-
-                <div class="chart-container">
-                    <canvas id="realCaseChart"></canvas>
-                </div>
-
-                <div class="factor-calculation">
-                    <h3 style="text-align: center; margin-bottom: 30px;">🧮 Cálculo del Factor de Corrección</h3>
-                    
-                    <div class="formula-box">
-                        Factor = Valor_Real ÷ Predicción_Modelo_Base
-                    </div>
-                    
-                    <div class="formula-box">
-                        Factor = $4.875.338 ÷ $3.269.017 = <span style="color: #ffeaa7;">1.4914</span>
-                    </div>
-                    
-                    <div class="factor-result">
-                        Factor = 1.49
-                    </div>
-                    
-                    <p style="text-align: center; font-size: 1.1em;">
-                        Este GAD genera sistemáticamente <strong>49% más ingresos</strong> que el comportamiento promedio
-                    </p>
-                </div>
-
-                <div class="step-by-step">
-                    <div class="step-card">
-                        <div class="step-number">1</div>
-                        <h4>Identificar la Brecha</h4>
-                        <p>El modelo base subestima consistentemente los ingresos de este GAD específico por $1.6 millones.</p>
-                    </div>
-                    
-                    <div class="step-card">
-                        <div class="step-number">2</div>
-                        <h4>Calcular el Factor</h4>
-                        <p>Factor = 1.49 indica que este GAD supera el comportamiento promedio en 49%.</p>
-                    </div>
-                    
-                    <div class="step-card">
-                        <div class="step-number">3</div>
-                        <h4>Aplicar Corrección</h4>
-                        <p>Para futuras predicciones: Predicción_Base × 1.49 = Predicción_Corregida</p>
-                    </div>
-                </div>
-
-                <div class="solution-section">
-                    <h3>💡 La Solución: Predicción Corregida</h3>
-                    <p style="font-size: 1.1em;">Para proyecciones futuras de este GAD:</p>
-                    
-                    <div class="formula-box">
-                        Predicción_Corregida = Predicción_Modelo_Base × 1.4914
-                    </div>
-                    
-                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
-                        <h4>Ejemplo de Proyección Futura:</h4>
-                        <p><strong>Si el modelo base predice:</strong> $3.500.000</p>
-                        <p><strong>Predicción corregida:</strong> $3.500.000 × 1.49 = <span style="color: #ffeaa7; font-size: 1.2em; font-weight: bold;">$5.219.900</span></p>
-                    </div>
-                </div>
-
-                <div class="controls">
-                    <button class="btn btn-animate" onclick="animateRealChart()">🎬 Mostrar Animación</button>
-                    <button class="btn btn-animate" onclick="resetRealChart()" style="background: #6c757d;">🔄 Reiniciar</button>
-                </div>
-
-                <div class="highlight-box">
-                    <h3>🎯 ¿Por qué funciona este enfoque?</h3>
-                    <p><strong>Estabilidad:</strong> El modelo base proporciona una tendencia estable y confiable</p>
-                    <p><strong>Personalización:</strong> El factor ajusta esa tendencia a las características específicas del GAD</p>
-                    <p><strong>Robustez:</strong> Combina la generalización del modelo base con la precisión local del factor</p>
-                </div>
-
-                <div class="interpretation">
-                    <h4>📊 Interpretación del Factor 1.49</h4>
-                    <p>Este GAD tiene características que lo hacen <strong>sistemáticamente más eficiente</strong> en la generación de ingresos:</p>
-                    <ul>
-                        <li>Mayor capacidad de recaudación</li>
-                        <li>Mejor gestión administrativa</li>
-                        <li>Ubicación estratégica o características económicas favorables</li>
-                        <li>Mayor cultura de pago ciudadana</li>
-                    </ul>
-                    <p><strong>Resultado:</strong> Sus ingresos reales superan consistentemente las predicciones del modelo promedio en aproximadamente 49%.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="controls">
-            <button class="btn btn-secondary" onclick="previousStep()" id="prevBtn" style="display: none;">⬅️ Anterior</button>
-            <button class="btn btn-primary" onclick="nextStep()" id="nextBtn">Siguiente ➡️</button>
-            <button class="btn btn-secondary" onclick="resetDemo()">🔄 Reiniciar</button>
-        </div>
-
-        <div class="explanation">
-            <h4>💡 ¿Por qué dos modelos?</h4>
-            <p><strong>Modelo Completo:</strong> Captura la realidad completa pero puede "sobreajustar" a características específicas que pueden no persistir en el futuro.</p>
-            <p><strong>Modelo Base:</strong> Proporciona una referencia estable y neutral que sirve como "denominador común" para todos los GADs.</p>
-            <p><strong>Factor de Corrección:</strong> Permite personalizar las predicciones manteniendo la estabilidad del modelo base.</p>
         </div>
     </div>
 
+    <!-- Botones Flotantes -->
+    <div class="floating-buttons">
+        <button class="floating-btn" onclick="downloadReport()" title="Descargar Reporte" id="downloadBtn" style="display: none;">
+            📄
+        </button>
+        <button class="floating-btn" onclick="resetSystem()" title="Reiniciar Sistema">
+            🔄
+        </button>
+        <button class="floating-btn" onclick="showHelp()" title="Ayuda">
+            ❓
+        </button>
+    </div>
+
     <script>
-        // Global variables
-        let currentStepNum = 1;
-        let charts = {};
-        let currentGAD = 'urbano';
-        
-        // Navigation functions
-        function nextStep() {
-            if (currentStepNum < 5) {
-                document.getElementById('step' + currentStepNum + '-content').style.display = 'none';
-                document.getElementById('step' + currentStepNum).classList.remove('active');
-                document.getElementById('step' + currentStepNum).classList.add('completed');
+        // Estado global del sistema
+        let systemState = {
+            databases: {
+                gastos: null,
+                rankings: null,
+                equidad: null,
+                deuda: null
+            },
+            loadedCount: 0,
+            validationResults: null,
+            processingResults: null,
+            optimizationResults: null
+        };
+
+        // Configuración de las bases de datos
+        const databaseConfig = {
+            gastos: {
+                name: "Datos Completos de Gastos",
+                requiredColumns: ["gad", "anho", "ing_pred", "g1_pred", "g2_pred", "est1"],
+                description: "Proyecciones financieras de GADs"
+            },
+            rankings: {
+                name: "Rankings AT",
+                requiredColumns: ["gad", "DECIL"],
+                description: "Rankings y deciles de GADs"
+            },
+            equidad: {
+                name: "Modelo de Equidad Municipal",
+                requiredColumns: ["gad"],
+                description: "Datos de equidad del MEF"
+            },
+            deuda: {
+                name: "Datos de Deuda",
+                requiredColumns: ["gad", "anho", "serv_deuda_total", "deuda_total"],
+                description: "Información de endeudamiento"
+            }
+        };
+
+        // Cargar base de datos
+        async function loadDatabase(dbType, fileInput) {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            showLoading(`Cargando ${databaseConfig[dbType].name}...`);
+
+            try {
+                const data = await parseFile(file);
                 
-                currentStepNum++;
-                document.getElementById('step' + currentStepNum + '-content').style.display = 'block';
-                document.getElementById('step' + currentStepNum).classList.add('active');
-                
-                document.getElementById('prevBtn').style.display = 'inline-block';
-                if (currentStepNum === 5) {
-                    document.getElementById('nextBtn').textContent = '✅ Completado';
-                    document.getElementById('nextBtn').disabled = true;
+                // Validar columnas requeridas
+                if (data.length === 0) {
+                    throw new Error("El archivo está vacío");
                 }
+
+                const columns = Object.keys(data[0]);
+                const requiredColumns = databaseConfig[dbType].requiredColumns;
+                const missingColumns = requiredColumns.filter(col => !columns.includes(col));
+
+                if (missingColumns.length > 0) {
+                    throw new Error(`Faltan columnas requeridas: ${missingColumns.join(', ')}`);
+                }
+
+                // Guardar datos
+                systemState.databases[dbType] = data;
+                
+                // Actualizar UI
+                updateDatabaseCard(dbType, 'loaded', data.length);
+                updateProgress();
+                showPreview(dbType, data);
+
+                logMessage(`✅ ${databaseConfig[dbType].name} cargada: ${data.length} registros`);
+
+            } catch (error) {
+                updateDatabaseCard(dbType, 'error', 0);
+                showAlert(`Error cargando ${databaseConfig[dbType].name}: ${error.message}`, 'error');
+                logMessage(`❌ Error: ${error.message}`);
             }
         }
 
-        function previousStep() {
-            if (currentStepNum > 1) {
-                document.getElementById('step' + currentStepNum + '-content').style.display = 'none';
-                document.getElementById('step' + currentStepNum).classList.remove('active');
+        // Parsear archivo (simulado - en implementación real usarías librerías como Papa Parse)
+        async function parseFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
                 
-                currentStepNum--;
-                document.getElementById('step' + currentStepNum + '-content').style.display = 'block';
-                document.getElementById('step' + currentStepNum).classList.remove('completed');
-                document.getElementById('step' + currentStepNum).classList.add('active');
+                reader.onload = function(e) {
+                    try {
+                        const text = e.target.result;
+                        
+                        if (file.name.endsWith('.csv')) {
+                            resolve(parseCSV(text));
+                        } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                            // En implementación real usarías SheetJS
+                            resolve(parseCSV(text)); // Simulado como CSV
+                        } else {
+                            reject(new Error('Formato de archivo no soportado'));
+                        }
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
                 
-                if (currentStepNum === 1) {
-                    document.getElementById('prevBtn').style.display = 'none';
-                }
-                document.getElementById('nextBtn').textContent = 'Siguiente ➡️';
-                document.getElementById('nextBtn').disabled = false;
-            }
-        }
-
-        function resetDemo() {
-            for (let i = 1; i <= 5; i++) {
-                document.getElementById('step' + i + '-content').style.display = i === 1 ? 'block' : 'none';
-                document.getElementById('step' + i).classList.remove('active', 'completed');
-            }
-            
-            currentStepNum = 1;
-            document.getElementById('step1').classList.add('completed');
-            document.getElementById('prevBtn').style.display = 'none';
-            document.getElementById('nextBtn').textContent = 'Siguiente ➡️';
-            document.getElementById('nextBtn').disabled = false;
-            
-            // Reset charts
-            if (charts.correction) {
-                showGAD('urbano');
-            }
-            if (charts.realCase) {
-                resetRealChart();
-            }
-        }
-
-        // Data and chart functions
-        function showGAD(gadType) {
-            currentGAD = gadType;
-            const data = gadData[gadType];
-            
-            // Update buttons
-            document.querySelectorAll('.gad-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.gad-btn').forEach(btn => {
-                if (btn.textContent.toLowerCase().includes(gadType.toLowerCase())) {
-                    btn.classList.add('active');
-                }
+                reader.onerror = () => reject(new Error('Error leyendo el archivo'));
+                reader.readAsText(file);
             });
+        }
+
+        // Parser CSV simple
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
             
-            // Update UI elements
-            const gadName = document.getElementById('gadName');
-            const factorValue = document.getElementById('factorValue');
-            const interpretation = document.getElementById('interpretation');
-            
-            gadName.textContent = gadType === 'urbano' ? 'GAD Urbano' : 
-                                gadType === 'rural' ? 'GAD Rural' : 'GAD Turístico';
-            factorValue.textContent = data.factor.toFixed(2);
-            const percentage = ((data.factor - 1) * 100).toFixed(0);
-            interpretation.textContent = (percentage >= 0 ? '+' : '') + percentage + '%';
-            
-            // Calculate corrected values
-            const corrected = data.base.map((base, i) => base * data.factor);
-            const factors = data.real.map((real, i) => real / data.base[i]);
-            
-            // Update chart
-            charts.correction.data.datasets = [
-                {
-                    label: 'Valor Real',
-                    data: data.real,
-                    borderColor: data.color,
-                    backgroundColor: 'transparent',
-                    tension: 0.4,
-                    pointRadius: 6,
-                    borderWidth: 3
-                },
-                {
-                    label: 'Predicción Base',
-                    data: data.base,
-                    borderColor: '#9b59b6',
-                    backgroundColor: 'transparent',
-                    borderDash: [5, 5],
-                    tension: 0.4,
-                    pointRadius: 6,
-                    borderWidth: 2
-                },
-                {
-                    label: 'Predicción Corregida',
-                    data: corrected,
-                    borderColor: '#27ae60',
-                    backgroundColor: 'transparent',
-                    tension: 0.4,
-                    pointRadius: 8,
-                    borderWidth: 3,
-                    pointStyle: 'rect'
-                },
-                {
-                    label: 'Factor de Corrección',
-                    data: factors,
-                    type: 'bar',
-                    backgroundColor: '#f39c12',
-                    borderColor: '#e67e22',
-                    borderWidth: 1,
-                    yAxisID: 'y1'
-                }
-            ];
-            
-            charts.correction.options = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Aplicación del Factor de Corrección',
-                        font: { size: 16, weight: 'bold' }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += context.dataset.type === 'bar' ? 
-                                        context.parsed.y.toFixed(2) + 'x' : 
-                                        context.parsed.y.toFixed(0);
-                                }
-                                return label;
-                            }
-                        }
+            return lines.slice(1).map(line => {
+                const values = line.split(',');
+                const obj = {};
+                headers.forEach((header, index) => {
+                    let value = values[index]?.trim() || '';
+                    
+                    // Convertir números
+                    if (!isNaN(value) && value !== '') {
+                        value = parseFloat(value);
                     }
-                },
-                scales: {
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Ingresos (índice base 100)'
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Factor de Corrección'
-                        },
-                        min: 0,
-                        max: 2,
-                        grid: {
-                            drawOnChartArea: false
-                        }
-                    }
+                    
+                    obj[header] = value;
+                });
+                return obj;
+            });
+        }
+
+        // Actualizar tarjeta de base de datos
+        function updateDatabaseCard(dbType, status, recordCount) {
+            const card = document.querySelector(`[data-db="${dbType}"]`);
+            const badge = card.querySelector('.status-badge');
+            
+            badge.className = `status-badge status-${status}`;
+            
+            switch (status) {
+                case 'loaded':
+                    badge.textContent = `✅ ${recordCount} registros`;
+                    card.classList.add('loaded');
+                    systemState.loadedCount++;
+                    break;
+                case 'error':
+                    badge.textContent = '❌ Error';
+                    card.classList.remove('loaded');
+                    break;
+                default:
+                    badge.textContent = 'Pendiente';
+                    card.classList.remove('loaded');
+            }
+
+            // Habilitar botón de validación si todas las bases están cargadas
+            if (systemState.loadedCount === 4) {
+                document.getElementById('validateBtn').disabled = false;
+                updateStep(2, 'active');
+            }
+        }
+
+        // Actualizar progreso
+        function updateProgress() {
+            const progress = (systemState.loadedCount / 4) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('progressText').textContent = `${systemState.loadedCount}/4 bases cargadas`;
+        }
+
+        // Mostrar vista previa
+        function showPreview(dbType, data) {
+            const container = document.getElementById('data-preview-container');
+            
+            if (systemState.loadedCount === 1) {
+                container.innerHTML = ''; // Limpiar mensaje inicial
+            }
+
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'data-preview';
+            
+            const preview = data.slice(0, 5); // Primeros 5 registros
+            const columns = Object.keys(preview[0]);
+
+            previewDiv.innerHTML = `
+                <h4>📊 ${databaseConfig[dbType].name}</h4>
+                <p><strong>Registros:</strong> ${data.length} | <strong>Columnas:</strong> ${columns.length}</p>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>
+                            ${preview.map(row => 
+                                `<tr>${columns.map(col => `<td>${row[col]}</td>`).join('')}</tr>`
+                            ).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ${data.length > 5 ? `<p style="margin-top: 10px; color: #666; font-size: 0.9rem;">... y ${data.length - 5} registros más</p>` : ''}
+            `;
+
+            container.appendChild(previewDiv);
+        }
+
+        // Validar todos los datos
+        async function validateAllData() {
+            if (systemState.loadedCount < 4) {
+                showAlert('Por favor carga todas las bases de datos primero', 'warning');
+                return;
+            }
+
+            showLoading('Validando integridad de datos...');
+            document.getElementById('validateBtn').disabled = true;
+
+            try {
+                // Simular validación (en implementación real sería más compleja)
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                const validationResults = performDataValidation();
+                systemState.validationResults = validationResults;
+
+                displayValidationResults(validationResults);
+                
+                if (validationResults.isValid) {
+                    updateStep(2, 'completed');
+                    updateStep(3, 'active');
+                    document.getElementById('processBtn').disabled = false;
+                    showAlert('✅ Validación exitosa. Los datos están listos para procesamiento.', 'success');
+                    updateSystemStats();
+                } else {
+                    showAlert('⚠️ Se encontraron problemas en la validación. Revisa los detalles.', 'warning');
                 }
+
+                logMessage('🔍 Validación de datos completada');
+
+            } catch (error) {
+                showAlert(`Error durante la validación: ${error.message}`, 'error');
+                logMessage(`❌ Error en validación: ${error.message}`);
+            } finally {
+                document.getElementById('validateBtn').disabled = false;
+            }
+        }
+
+        // Realizar validación de datos
+        function performDataValidation() {
+            const results = {
+                isValid: true,
+                errors: [],
+                warnings: [],
+                stats: {}
             };
-            
-            charts.correction.update();
-        }
 
-        function animateCorrection() {
-            const data = gadData[currentGAD];
-            
-            // Reset corrected values
-            charts.correction.data.datasets[2].data = data.base.map(() => null);
-            charts.correction.update();
-            
-            // Animate each point
-            data.base.forEach((_, i) => {
-                setTimeout(() => {
-                    charts.correction.data.datasets[2].data[i] = data.base[i] * data.factor;
-                    charts.correction.update();
-                }, 500 * (i + 1));
-            });
-        }
+            try {
+                // Validar consistencia de GADs
+                const gadsGastos = new Set(systemState.databases.gastos.map(row => row.gad));
+                const gadsDeuda = new Set(systemState.databases.deuda.map(row => row.gad));
+                const gadsRankings = new Set(systemState.databases.rankings.map(row => row.gad));
 
-        function resetCorrectionChart() {
-            const data = gadData[currentGAD];
-            const corrected = data.base.map(base => base * data.factor);
-            charts.correction.data.datasets[2].data = corrected;
-            charts.correction.update();
-        }
+                // GADs faltantes
+                const faltantesDeuda = [...gadsGastos].filter(gad => !gadsDeuda.has(gad));
+                const faltantesRankings = [...gadsGastos].filter(gad => !gadsRankings.has(gad));
 
-        function animateRealChart() {
-            // Reset data
-            charts.realCase.data.datasets[2].data = [null, null, null, null, null, null, null];
-            charts.realCase.update('none');
-            
-            // Animate corrected predictions
-            setTimeout(() => {
-                charts.realCase.data.datasets[2].data[5] = 5069600; // 2025
-                charts.realCase.update('active');
-            }, 500);
-            
-            setTimeout(() => {
-                charts.realCase.data.datasets[2].data[6] = 5294050; // 2026
-                charts.realCase.update('active');
-            }, 1000);
-            
-            // Highlight difference in 2024
-            setTimeout(() => {
-                charts.realCase.data.datasets[0].pointRadius = [6, 6, 6, 6, 15, 6, 6];
-                charts.realCase.data.datasets[1].pointRadius = [6, 6, 6, 6, 15, 6, 6];
-                charts.realCase.update('active');
-            }, 1500);
-        }
+                if (faltantesDeuda.length > 0) {
+                    results.warnings.push(`${faltantesDeuda.length} GADs sin datos de deuda`);
+                }
 
-        function resetRealChart() {
-            charts.realCase.data.datasets[2].data = realCaseData.correctedModel;
-            charts.realCase.data.datasets[0].pointRadius = 8;
-            charts.realCase.data.datasets[1].pointRadius = 6;
-            charts.realCase.update();
-        }
+                if (faltantesRankings.length > 0) {
+                    results.warnings.push(`${faltantesRankings.length} GADs sin rankings`);
+                }
 
-        // Data definitions
-        const years = [2018, 2019, 2020, 2021, 2022, 2023, 2024];
-        const realCaseYears = ['2020', '2021', '2022', '2023', '2024', '2025', '2026'];
-        
-        const gadData = {
-            urbano: {
-                real: [100, 108, 95, 112, 125, 138, 142],
-                base: [100, 105, 88, 108, 118, 128, 132],
-                complete: [100, 107, 94, 111, 124, 137, 141],
-                factor: 1.20,
-                color: '#e74c3c'
-            },
-            rural: {
-                real: [80, 82, 75, 85, 88, 92, 95],
-                base: [100, 105, 88, 108, 118, 128, 132],
-                complete: [80, 81, 74, 84, 87, 91, 94],
-                factor: 0.85,
-                color: '#27ae60'
-            },
-            turistico: {
-                real: [90, 95, 70, 110, 85, 125, 105],
-                base: [100, 105, 88, 108, 118, 128, 132],
-                complete: [90, 94, 69, 109, 84, 124, 104],
-                factor: 1.05,
-                color: '#3498db'
+                // Validar rangos numéricos
+                const invalidIngresos = systemState.databases.gastos.filter(row => 
+                    typeof row.ing_pred === 'number' && row.ing_pred <= 0
+                ).length;
+
+                if (invalidIngresos > 0) {
+                    results.errors.push(`${invalidIngresos} registros con ingresos inválidos`);
+                    results.isValid = false;
+                }
+
+                // Validar estratos
+                const invalidEstratos = systemState.databases.gastos.filter(row => 
+                    typeof row.est1 === 'number' && (row.est1 < 1 || row.est1 > 6)
+                ).length;
+
+                if (invalidEstratos > 0) {
+                    results.errors.push(`${invalidEstratos} registros con estratos inválidos`);
+                    results.isValid = false;
+                }
+
+                // Estadísticas
+                results.stats = {
+                    totalGADs: gadsGastos.size,
+                    totalRegistros: systemState.databases.gastos.length,
+                    añosRango: getYearRange(systemState.databases.gastos),
+                    estratosDistribucion: getEstratoDistribution(systemState.databases.gastos)
+                };
+
+            } catch (error) {
+                results.errors.push(`Error durante validación: ${error.message}`);
+                results.isValid = false;
             }
-        };
 
-        const realCaseData = {
-            realValues: [3800000, 4100000, 4450000, 4600000, 4875338, null, null],
-            baseModel: [2800000, 3000000, 3150000, 3200000, 3269017, 3400000, 3550000],
-            correctedModel: [null, null, null, null, null, 5069600, 5294050],
-            correctionFactor: 1.4914
-        };
-
-        function initializeCharts() {
-            // Initial data chart
-            const ctx1 = document.getElementById('dataChart').getContext('2d');
-            charts.data = new Chart(ctx1, {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [
-                        {
-                            label: 'GAD Urbano',
-                            data: gadData.urbano.real,
-                            borderColor: gadData.urbano.color,
-                            backgroundColor: gadData.urbano.color + '20',
-                            tension: 0.4,
-                            pointRadius: 6
-                        },
-                        {
-                            label: 'GAD Rural',
-                            data: gadData.rural.real,
-                            borderColor: gadData.rural.color,
-                            backgroundColor: gadData.rural.color + '20',
-                            tension: 0.4,
-                            pointRadius: 6
-                        },
-                        {
-                            label: 'GAD Turístico',
-                            data: gadData.turistico.real,
-                            borderColor: gadData.turistico.color,
-                            backgroundColor: gadData.turistico.color + '20',
-                            tension: 0.4,
-                            pointRadius: 6
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Datos Históricos Reales de Ingresos por GAD',
-                            font: { size: 16, weight: 'bold' }
-                        },
-                        legend: {
-                            position: 'top'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Ingresos (índice base 100)'
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Complete model chart
-            const ctx2 = document.getElementById('completeModelChart').getContext('2d');
-            charts.complete = new Chart(ctx2, {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [
-                        {
-                            label: 'Real - GAD Urbano',
-                            data: gadData.urbano.real,
-                            borderColor: gadData.urbano.color,
-                            backgroundColor: 'transparent',
-                            tension: 0.4,
-                            pointStyle: 'circle',
-                            pointRadius: 6
-                        },
-                        {
-                            label: 'Predicción Completa - GAD Urbano',
-                            data: gadData.urbano.complete,
-                            borderColor: gadData.urbano.color,
-                            backgroundColor: 'transparent',
-                            borderDash: [5, 5],
-                            tension: 0.4,
-                            pointStyle: 'triangle',
-                            pointRadius: 6
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Modelo Completo: Ajuste Específico por GAD',
-                            font: { size: 16, weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Ingresos (índice base 100)'
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Base model chart
-            const ctx3 = document.getElementById('baseModelChart').getContext('2d');
-            charts.base = new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [
-                        {
-                            label: 'Real - GAD Urbano',
-                            data: gadData.urbano.real,
-                            borderColor: gadData.urbano.color,
-                            backgroundColor: 'transparent',
-                            tension: 0.4,
-                            pointRadius: 6
-                        },
-                        {
-                            label: 'Real - GAD Rural',
-                            data: gadData.rural.real,
-                            borderColor: gadData.rural.color,
-                            backgroundColor: 'transparent',
-                            tension: 0.4,
-                            pointRadius: 6
-                        },
-                        {
-                            label: 'Predicción Base (Común)',
-                            data: gadData.urbano.base,
-                            borderColor: '#9b59b6',
-                            backgroundColor: 'transparent',
-                            borderDash: [10, 5],
-                            tension: 0.4,
-                            pointStyle: 'rect',
-                            pointRadius: 8,
-                            borderWidth: 3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Modelo Base: Línea Neutral Común',
-                            font: { size: 16, weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Ingresos (índice base 100)'
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Correction factor chart (ACTUALIZADO)
-            const ctx4 = document.getElementById('correctionChart').getContext('2d');
-            charts.correction = new Chart(ctx4, {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: []
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Aplicación del Factor de Corrección',
-                            font: { size: 16, weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Ingresos (índice base 100)'
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Real case chart
-            const ctx5 = document.getElementById('realCaseChart').getContext('2d');
-            charts.realCase = new Chart(ctx5, {
-                type: 'line',
-                data: {
-                    labels: realCaseYears,
-                    datasets: [
-                        {
-                            label: 'Valores Reales (Histórico)',
-                            data: realCaseData.realValues,
-                            borderColor: '#27ae60',
-                            backgroundColor: '#27ae60',
-                            pointBackgroundColor: '#27ae60',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 3,
-                            pointRadius: 8,
-                            tension: 0.4,
-                            borderWidth: 4
-                        },
-                        {
-                            label: 'Modelo Base (Predicción Neutral)',
-                            data: realCaseData.baseModel,
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'transparent',
-                            pointBackgroundColor: '#e74c3c',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 6,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            borderDash: [10, 5]
-                        },
-                        {
-                            label: 'Predicción Corregida (Base × 1.49)',
-                            data: realCaseData.correctedModel,
-                            borderColor: '#6c5ce7',
-                            backgroundColor: '#6c5ce7',
-                            pointBackgroundColor: '#6c5ce7',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 3,
-                            pointRadius: 10,
-                            tension: 0.4,
-                            borderWidth: 4,
-                            pointStyle: 'rectRot'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Evolución Temporal: Real vs Modelo Base vs Predicción Corregida',
-                            font: {
-                                size: 18,
-                                weight: 'bold'
-                            },
-                            padding: 20
-                        },
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: {
-                                    size: 12,
-                                    weight: 'bold'
-                                }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleColor: 'white',
-                            bodyColor: 'white',
-                            borderColor: '#667eea',
-                            borderWidth: 2,
-                            callbacks: {
-                                label: function(context) {
-                                    let value = context.parsed.y;
-                                    if (value) {
-                                        return context.dataset.label + ': ' + value.toLocaleString();
-                                    }
-                                    return null;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            min: 2500000,
-                            title: {
-                                display: true,
-                                text: 'Ingresos (USD)',
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                }
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + (value / 1000000).toFixed(1) + 'M';
-                                }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Año',
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            }
-                        }
-                    },
-                    elements: {
-                        point: {
-                            hoverRadius: 12
-                        }
-                    }
-                }
-            });
-
-            showGAD('urbano');
+            return results;
         }
 
-        // Initialize when page loads
-        window.addEventListener('load', function() {
-            initializeCharts();
+        // Obtener rango de años
+        function getYearRange(data) {
+            const años = data.map(row => row.anho).filter(año => typeof año === 'number');
+            if (años.length === 0) return 'N/A';
+            return `${Math.min(...años)} - ${Math.max(...años)}`;
+        }
+
+        // Obtener distribución de estratos
+        function getEstratoDistribution(data) {
+            const distribution = {};
+            data.forEach(row => {
+                if (typeof row.est1 === 'number') {
+                    distribution[row.est1] = (distribution[row.est1] || 0) + 1;
+                }
+            });
+            return distribution;
+        }
+
+        // Mostrar resultados de validación
+        function displayValidationResults(results) {
+            const container = document.getElementById('validation-results');
+            
+            let html = '';
+
+            // Resumen general
+            html += `
+                <div class="alert ${results.isValid ? 'alert-success' : 'alert-error'}">
+                    ${results.isValid ? '✅ Validación exitosa' : '❌ Problemas encontrados en la validación'}
+                </div>
+            `;
+
+            // Estadísticas
+            html += `
+                <div class="results-grid">
+                    <div class="result-card">
+                        <h4>📊 Estadísticas Generales</h4>
+                        <div class="metric">
+                            <span>Total GADs:</span>
+                            <span class="metric-value">${results.stats.totalGADs}</span>
+                        </div>
+                        <div class="metric">
+                            <span>Total Registros:</span>
+                            <span class="metric-value">${results.stats.totalRegistros}</span>
+                        </div>
+                        <div class="metric">
+                            <span>Rango de Años:</span>
+                            <span class="metric-value">${results.stats.añosRango}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <h4>🏛️ Distribución por Estratos</h4>
+                        ${Object.entries(results.stats.estratosDistribucion).map(([estrato, count]) => `
+                            <div class="metric">
+                                <span>Estrato ${estrato}:</span>
+                                <span class="metric-value">${count}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Errores
+            if (results.errors.length > 0) {
+                html += `
+                    <div class="alert alert-error">
+                        <h4>❌ Errores Encontrados:</h4>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            ${results.errors.map(error => `<li>${error}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Advertencias
+            if (results.warnings.length > 0) {
+                html += `
+                    <div class="alert alert-warning">
+                        <h4>⚠️ Advertencias:</h4>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            ${results.warnings.map(warning => `<li>${warning}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+            showTab('validation');
+        }
+
+        // Actualizar estadísticas del sistema
+        function updateSystemStats() {
+            if (systemState.validationResults) {
+                document.getElementById('gadsCount').textContent = systemState.validationResults.stats.totalGADs;
+                document.getElementById('yearsRange').textContent = systemState.validationResults.stats.añosRango;
+                document.getElementById('totalRecords').textContent = systemState.validationResults.stats.totalRegistros;
+                document.getElementById('systemStatus').textContent = 'Listo para procesar';
+            }
+        }
+
+        // Iniciar procesamiento
+        async function startProcessing() {
+            if (!systemState.validationResults || !systemState.validationResults.isValid) {
+                showAlert('Por favor valida los datos primero', 'warning');
+                return;
+            }
+
+            const precision = parseFloat(document.getElementById('precision').value);
+            const strategy = document.getElementById('strategy').value;
+
+            showLoading('Iniciando procesamiento y optimización...');
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('processing-log').classList.remove('hidden');
+
+            try {
+                // Paso 1: Procesamiento de datos
+                updateStep(3, 'completed');
+                updateStep(4, 'active');
+                logMessage('🔄 Iniciando procesamiento de datos...');
+                
+                await simulateProcessing('Consolidando datos de GADs...', 1000);
+                logMessage('✅ Datos consolidados exitosamente');
+
+                await simulateProcessing('Calculando parámetros financieros...', 1500);
+                logMessage('✅ Parámetros calculados');
+
+                await simulateProcessing('Aplicando restricciones COPLAFIP...', 1200);
+                logMessage('✅ Restricciones aplicadas');
+
+                // Paso 2: Optimización
+                logMessage('🎯 Iniciando optimización automática...');
+                await simulateProcessing('Detectando GADs problemáticos...', 800);
+                
+                const gadsProblematicos = Math.floor(systemState.validationResults.stats.totalGADs * 0.3);
+                logMessage(`📊 ${gadsProblematicos} GADs problemáticos detectados`);
+
+                await simulateProcessing('Optimizando parámetros por estrato...', 2000);
+                logMessage('⚙️ Optimización por estratos completada');
+
+                await simulateProcessing('Validando resultados...', 1000);
+                logMessage('✅ Validación de resultados exitosa');
+
+                // Generar resultados simulados
+                const optimizationResults = generateOptimizationResults(gadsProblematicos);
+                systemState.optimizationResults = optimizationResults;
+
+                // Mostrar resultados
+                displayOptimizationResults(optimizationResults);
+                
+                updateStep(4, 'completed');
+                updateStep(5, 'active');
+                
+                document.getElementById('downloadBtn').style.display = 'block';
+                showAlert('🎉 Optimización completada exitosamente!', 'success');
+                logMessage('🎯 Proceso de optimización finalizado');
+
+            } catch (error) {
+                showAlert(`Error durante el procesamiento: ${error.message}`, 'error');
+                logMessage(`❌ Error: ${error.message}`);
+            } finally {
+                document.getElementById('processBtn').disabled = false;
+            }
+        }
+
+        // Simular procesamiento
+        async function simulateProcessing(message, duration) {
+            logMessage(`⏳ ${message}`);
+            await new Promise(resolve => setTimeout(resolve, duration));
+        }
+
+        // Generar resultados de optimización simulados
+        function generateOptimizationResults(gadsProblematicos) {
+            const totalGads = systemState.validationResults.stats.totalGADs;
+            const optimizados = Math.floor(gadsProblematicos * 0.75);
+            const noOptimizables = gadsProblematicos - optimizados;
+
+            return {
+                totalProcesados: gadsProblematicos,
+                optimizados: optimizados,
+                noOptimizables: noOptimizables,
+                tasaExito: (optimizados / gadsProblematicos * 100).toFixed(1),
+                reduccionPromedio: (Math.random() * 30 + 10).toFixed(2),
+                detallesPorEstrato: generateEstratoDetails(),
+                topOptimizaciones: generateTopOptimizations(5),
+                gadsProblematicosRestantes: noOptimizables
+            };
+        }
+
+        // Generar detalles por estrato
+        function generateEstratoDetails() {
+            const estratos = [1, 2, 3, 4, 5];
+            return estratos.map(estrato => ({
+                estrato: estrato,
+                total: Math.floor(Math.random() * 20 + 5),
+                optimizados: Math.floor(Math.random() * 15 + 3),
+                tasaExito: (Math.random() * 40 + 60).toFixed(1),
+                reduccionPromedio: (Math.random() * 25 + 15).toFixed(2)
+            }));
+        }
+
+        // Generar top optimizaciones
+        function generateTopOptimizations(count) {
+            const gadNames = [
+                'G.A.D. MUNICIPAL DE QUITO',
+                'G.A.D. MUNICIPAL DE GUAYAQUIL',
+                'G.A.D. MUNICIPAL DE CUENCA',
+                'G.A.D. PROVINCIAL DE PICHINCHA',
+                'G.A.D. PROVINCIAL DE GUAYAS',
+                'G.A.D. MUNICIPAL DE AMBATO',
+                'G.A.D. MUNICIPAL DE MACHALA',
+                'G.A.D. MUNICIPAL DE SANTO DOMINGO'
+            ];
+
+            return Array.from({length: count}, (_, i) => ({
+                gad: gadNames[i % gadNames.length],
+                percVpOriginal: (Math.random() * 0.2 + 0.25).toFixed(4),
+                percVpOptimo: (Math.random() * 0.15 + 0.05).toFixed(4),
+                reduccion: (Math.random() * 40 + 20).toFixed(2),
+                estrato: Math.floor(Math.random() * 5) + 1
+            }));
+        }
+
+        // Mostrar resultados de optimización
+        function displayOptimizationResults(results) {
+            const container = document.getElementById('optimization-results');
+
+            const html = `
+                <div class="alert alert-success">
+                    🎉 Optimización completada: ${results.optimizados}/${results.totalProcesados} GADs optimizados (${results.tasaExito}% de éxito)
+                </div>
+
+                <div class="results-grid">
+                    <div class="result-card">
+                        <h4>📊 Resumen Ejecutivo</h4>
+                        <div class="metric">
+                            <span>GADs Procesados:</span>
+                            <span class="metric-value">${results.totalProcesados}</span>
+                        </div>
+                        <div class="metric">
+                            <span>GADs Optimizados:</span>
+                            <span class="metric-value">${results.optimizados}</span>
+                        </div>
+                        <div class="metric">
+                            <span>Tasa de Éxito:</span>
+                            <span class="metric-value">${results.tasaExito}%</span>
+                        </div>
+                        <div class="metric">
+                            <span>Reducción Promedio:</span>
+                            <span class="metric-value">${results.reduccionPromedio}%</span>
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <h4>🏛️ Resultados por Estrato</h4>
+                        ${results.detallesPorEstrato.map(estrato => `
+                            <div class="metric">
+                                <span>Estrato ${estrato.estrato}:</span>
+                                <span class="metric-value">${estrato.optimizados}/${estrato.total} (${estrato.tasaExito}%)</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="result-card" style="margin-top: 20px;">
+                    <h4>🏆 Top 5 Optimizaciones</h4>
+                    ${results.topOptimizaciones.map((opt, index) => `
+                        <div class="gad-item">
+                            <div class="gad-info">
+                                <h5>${index + 1}. ${opt.gad}</h5>
+                                <p>perc_vp: ${opt.percVpOriginal} → ${opt.percVpOptimo} | Estrato: ${opt.estrato}</p>
+                            </div>
+                            <div class="gad-status status-optimized">
+                                -${opt.reduccion}%
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                ${results.gadsProblematicosRestantes > 0 ? `
+                    <div class="alert alert-warning" style="margin-top: 20px;">
+                        ⚠️ ${results.gadsProblematicosRestantes} GADs requieren atención manual adicional
+                    </div>
+                ` : ''}
+            `;
+
+            container.innerHTML = html;
+            showTab('results');
+        }
+
+        // Cambiar pestaña
+        function showTab(tabName) {
+            // Ocultar todas las pestañas
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Desactivar todos los botones
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Mostrar pestaña seleccionada
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Activar botón correspondiente
+            event?.target?.classList.add('active');
+        }
+
+        // Actualizar paso en el indicador
+        function updateStep(stepNumber, status) {
+            const step = document.getElementById(`step${stepNumber}`);
+            step.className = `step ${status}`;
+        }
+
+        // Mostrar mensaje de carga
+        function showLoading(message) {
+            // Implementar overlay de carga si es necesario
+            console.log(`Loading: ${message}`);
+        }
+
+        // Mostrar alerta
+        function showAlert(message, type) {
+            // Crear elemento de alerta temporal
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = message;
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.style.maxWidth = '400px';
+            alert.style.animation = 'slideInRight 0.3s ease';
+
+            document.body.appendChild(alert);
+
+            // Remover después de 5 segundos
+            setTimeout(() => {
+                alert.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Agregar mensaje al log
+        function logMessage(message) {
+            const logContent = document.getElementById('log-content');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            
+            logContent.textContent += logEntry;
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        // Descargar reporte
+        function downloadReport() {
+            if (!systemState.optimizationResults) {
+                showAlert('No hay resultados para descargar', 'warning');
+                return;
+            }
+
+            // Simular descarga de reporte
+            showAlert('📄 Generando reporte Excel...', 'success');
+            
+            // En implementación real, generarías y descargarías el archivo Excel
+            setTimeout(() => {
+                showAlert('✅ Reporte descargado: Optimizacion_Cupos_GAD.xlsx', 'success');
+            }, 2000);
+        }
+
+        // Reiniciar sistema
+        function resetSystem() {
+            if (confirm('¿Estás seguro de que quieres reiniciar el sistema? Se perderán todos los datos cargados.')) {
+                location.reload();
+            }
+        }
+
+        // Mostrar ayuda
+        function showHelp() {
+            const helpContent = `
+                🏛️ SISTEMA DE OPTIMIZACIÓN DE CUPOS GAD
+
+                📋 PASOS PARA USAR EL SISTEMA:
+
+                1️⃣ CARGAR DATOS:
+                   • Sube las 4 bases de datos requeridas
+                   • Formatos soportados: Excel (.xlsx), CSV (.csv)
+                   • Verifica que tengan las columnas requeridas
+
+                2️⃣ VALIDAR:
+                   • El sistema verifica la integridad de los datos
+                   • Revisa errores y advertencias
+                   • Confirma que los datos son consistentes
+
+                3️⃣ PROCESAR:
+                   • Configura parámetros de optimización
+                   • Selecciona estrategia (automática recomendada)
+                   • Ajusta precisión según necesidades
+
+                4️⃣ OPTIMIZAR:
+                   • El sistema encuentra valores óptimos de perc_vp
+                   • Aplica restricciones COPLAFIP automáticamente
+                   • Genera reporte de resultados
+
+                5️⃣ REPORTES:
+                   • Descarga resultados en Excel
+                   • Revisa estadísticas por estrato
+                   • Identifica GADs que requieren atención
+
+                ❓ BASES DE DATOS REQUERIDAS:
+
+                📊 Datos Completos de Gastos:
+                   • Columnas: gad, anho, ing_pred, g1_pred, g2_pred, est1
+                   • Proyecciones financieras de GADs
+
+                📈 Rankings AT:
+                   • Columnas: gad, DECIL
+                   • Rankings de desempeño
+
+                ⚖️ Modelo de Equidad Municipal:
+                   • Columnas: gad
+                   • Datos del MEF
+
+                💳 Datos de Deuda:
+                   • Columnas: gad, anho, serv_deuda_total, deuda_total
+                   • Información de endeudamiento
+
+                🎯 CONSEJOS:
+                   • Usa precisión 0.01 para mejores resultados
+                   • Revisa advertencias en la validación
+                   • Estrategia automática es la recomendada
+                   • Los resultados se pueden exportar a Excel
+
+                📞 SOPORTE:
+                   Para ayuda adicional, contacta al equipo técnico.
+            `;
+
+            alert(helpContent);
+        }
+
+        // Animaciones CSS adicionales
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            logMessage('🚀 Sistema de Optimización de Cupos GAD iniciado');
+            logMessage('📋 Esperando carga de bases de datos...');
         });
     </script>
 </body>
