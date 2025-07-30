@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrenamiento Dual de Modelos GAD - Completo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .step-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .step {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #667eea;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .step:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .step h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .step-complete {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #27ae60;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-animate {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-animate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .gad-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .gad-btn {
+            padding: 8px 16px;
+            border: 2px solid #dee2e6;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+        
+        .gad-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .result-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .result-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .explanation {
+            background: #e8f4f8;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            border-left: 5px solid #17a2b8;
+        }
+        
+        .formula {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
+        .step-dot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .step-dot.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            transform: scale(1.2);
+        }
+        
+        .step-dot.completed {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .problem-statement {
+            background: linear-gradient(135deg, #ff7675, #fd79a8);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .problem-statement h2 {
+            margin: 0 0 15px 0;
+            font-size: 1.8em;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .value-card {
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .real-value {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+        
+        .model-value {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .difference-value {
+            background: linear-gradient(135deg, #f39c12, #d35400);
+        }
+        
+        .value-amount {
+            font-size: 2.2em;
+            margin: 10px 0;
+        }
+        
+        .value-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .solution-section {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+        
+        .formula-box {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            font-size: 1.2em;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .step-by-step {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .step-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #667eea;
+            transition: transform 0.3s ease;
+        }
+        
+        .step-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .step-number {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .factor-calculation {
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+        
+        .factor-result {
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .interpretation {
+            background: #e8f4f8;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            border-left: 5px solid #17a2b8;
+        }
+        
+        @media (max-width: 768px) {
+            .step-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .results {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .step-by-step {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏛️ Entrenamiento Dual de Modelos para GADs</h1>
+            <p style="color: #6c757d; font-size: 1.1em;">Visualización completa: Teoría y Aplicación Práctica</p>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step-dot completed" id="step1">1</div>
+            <div class="step-dot" id="step2">2</div>
+            <div class="step-dot" id="step3">3</div>
+            <div class="step-dot" id="step4">4</div>
+            <div class="step-dot" id="step5">5</div>
+        </div>
+
+        <div id="currentStep">
+            <!-- Paso 1: Datos Iniciales -->
+            <div id="step1-content">
+                <div class="step-container">
+                    <div class="step">
+                        <h3>📊 Datos Históricos (2018-2024)</h3>
+                        <p>Datos reales de ingresos de diferentes GADs con sus características específicas.</p>
+                        <ul>
+                            <li><strong>GAD Urbano:</strong> Alto rendimiento (+20%)</li>
+                            <li><strong>GAD Rural:</strong> Rendimiento bajo (-15%)</li>
+                            <li><strong>GAD Turístico:</strong> Alta variabilidad</li>
+                        </ul>
+                    </div>
+                    <div class="step">
+                        <h3>🎯 Objetivo</h3>
+                        <p>Separar el comportamiento común de las características específicas de cada GAD.</p>
+                        <div class="formula">
+                            Ingreso_GAD = Comportamiento_Común + Efecto_Específico
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="dataChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Paso 2: Modelo Completo -->
+            <div id="step2-content" style="display: none;">
+                <div class="step-complete">
+                    <h3>🧠 Modelo Completo (CON efectos GAD)</h3>
+                    <p>Captura el comportamiento específico de cada GAD incluyendo sus características únicas.</p>
+                    <div class="formula">
+                        ln(Ingreso) = β₀ + β₁·lag1 + β₂·lag2 + β₃·lag3 + α_GAD + ε
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="completeModelChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Paso 3: Modelo Base -->
+            <div id="step3-content" style="display: none;">
+                <div class="step-complete">
+                    <h3>📏 Modelo Base (SIN efectos GAD)</h3>
+                    <p>Establece una línea base neutral que representa el comportamiento "promedio" común a todos los GADs.</p>
+                    <div class="formula">
+                        ln(Ingreso) = β₀ + β₁·lag1 + β₂·lag2 + β₃·lag3 + ε
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="baseModelChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Paso 4: Factor de Corrección (ACTUALIZADO) -->
+            <div id="step4-content" style="display: none;">
+                <div class="step-complete">
+                    <h3>⚖️ Cálculo del Factor de Corrección</h3>
+                    <p>El factor de corrección ajusta las predicciones del modelo base según las características específicas de cada GAD.</p>
+                    <div class="formula">
+                        Predicción_Corregida = Predicción_Modelo_Base × Factor_Corrección
+                    </div>
+                </div>
+                
+                <div class="gad-selector">
+                    <button class="gad-btn active" onclick="showGAD('urbano')">GAD Urbano</button>
+                    <button class="gad-btn" onclick="showGAD('rural')">GAD Rural</button>
+                    <button class="gad-btn" onclick="showGAD('turistico')">GAD Turístico</button>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="correctionChart"></canvas>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-animate" onclick="animateCorrection()">🎬 Mostrar Aplicación del Factor</button>
+                    <button class="btn btn-animate" onclick="resetCorrectionChart()" style="background: #6c757d;">🔄 Reiniciar</button>
+                </div>
+                
+                <div class="results">
+                    <div class="result-card">
+                        <div>Factor Promedio</div>
+                        <div class="result-value" id="factorValue">1.20</div>
+                        <div id="gadName">GAD Urbano</div>
+                    </div>
+                    <div class="result-card">
+                        <div>Interpretación</div>
+                        <div class="result-value" id="interpretation">+20%</div>
+                        <div>Sobre promedio</div>
+                    </div>
+                </div>
+                
+                <div class="explanation">
+                    <h4>📌 ¿Cómo leer este gráfico?</h4>
+                    <p><strong>Línea morada:</strong> Predicción del modelo base (comportamiento promedio)</p>
+                    <p><strong>Línea verde:</strong> Predicción corregida (base × factor)</p>
+                    <p><strong>Barras naranjas:</strong> Factores de corrección aplicados cada año</p>
+                    <p><strong>Línea roja/azul/verde:</strong> Valores reales observados</p>
+                </div>
+            </div>
+
+            <!-- Paso 5: Caso Real en Acción -->
+            <div id="step5-content" style="display: none;">
+                <div class="problem-statement">
+                    <h2>🚨 Factor de Corrección en Acción</h2>
+                    <p style="font-size: 1.1em;">Caso Real: Cuando el Modelo Base Subestima los Ingresos</p>
+                </div>
+
+                <div class="comparison-grid">
+                    <div class="value-card real-value">
+                        <div class="value-label">Valor Real</div>
+                        <div class="value-amount">$4.875.338</div>
+                        <div style="font-size: 0.9em;">exp(15,3897)</div>
+                    </div>
+                    <div class="value-card model-value">
+                        <div class="value-label">Modelo Base</div>
+                        <div class="value-amount">$3.269.017</div>
+                        <div style="font-size: 0.9em;">exp(15)</div>
+                    </div>
+                    <div class="value-card difference-value">
+                        <div class="value-label">Diferencia (Pérdida)</div>
+                        <div class="value-amount">$1.606.321</div>
+                        <div style="font-size: 0.9em;">-32.9% Error</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="realCaseChart"></canvas>
+                </div>
+
+                <div class="factor-calculation">
+                    <h3 style="text-align: center; margin-bottom: 30px;">🧮 Cálculo del Factor de Corrección</h3>
+                    
+                    <div class="formula-box">
+                        Factor = Valor_Real ÷ Predicción_Modelo_Base
+                    </div>
+                    
+                    <div class="formula-box">
+                        Factor = $4.875.338 ÷ $3.269.017 = <span style="color: #ffeaa7;">1.4914</span>
+                    </div>
+                    
+                    <div class="factor-result">
+                        Factor = 1.49
+                    </div>
+                    
+                    <p style="text-align: center; font-size: 1.1em;">
+                        Este GAD genera sistemáticamente <strong>49% más ingresos</strong> que el comportamiento promedio
+                    </p>
+                </div>
+
+                <div class="step-by-step">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h4>Identificar la Brecha</h4>
+                        <p>El modelo base subestima consistentemente los ingresos de este GAD específico por $1.6 millones.</p>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h4>Calcular el Factor</h4>
+                        <p>Factor = 1.49 indica que este GAD supera el comportamiento promedio en 49%.</p>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h4>Aplicar Corrección</h4>
+                        <p>Para futuras predicciones: Predicción_Base × 1.49 = Predicción_Corregida</p>
+                    </div>
+                </div>
+
+                <div class="solution-section">
+                    <h3>💡 La Solución: Predicción Corregida</h3>
+                    <p style="font-size: 1.1em;">Para proyecciones futuras de este GAD:</p>
+                    
+                    <div class="formula-box">
+                        Predicción_Corregida = Predicción_Modelo_Base × 1.4914
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h4>Ejemplo de Proyección Futura:</h4>
+                        <p><strong>Si el modelo base predice:</strong> $3.500.000</p>
+                        <p><strong>Predicción corregida:</strong> $3.500.000 × 1.49 = <span style="color: #ffeaa7; font-size: 1.2em; font-weight: bold;">$5.219.900</span></p>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-animate" onclick="animateRealChart()">🎬 Mostrar Animación</button>
+                    <button class="btn btn-animate" onclick="resetRealChart()" style="background: #6c757d;">🔄 Reiniciar</button>
+                </div>
+
+                <div class="highlight-box">
+                    <h3>🎯 ¿Por qué funciona este enfoque?</h3>
+                    <p><strong>Estabilidad:</strong> El modelo base proporciona una tendencia estable y confiable</p>
+                    <p><strong>Personalización:</strong> El factor ajusta esa tendencia a las características específicas del GAD</p>
+                    <p><strong>Robustez:</strong> Combina la generalización del modelo base con la precisión local del factor</p>
+                </div>
+
+                <div class="interpretation">
+                    <h4>📊 Interpretación del Factor 1.49</h4>
+                    <p>Este GAD tiene características que lo hacen <strong>sistemáticamente más eficiente</strong> en la generación de ingresos:</p>
+                    <ul>
+                        <li>Mayor capacidad de recaudación</li>
+                        <li>Mejor gestión administrativa</li>
+                        <li>Ubicación estratégica o características económicas favorables</li>
+                        <li>Mayor cultura de pago ciudadana</li>
+                    </ul>
+                    <p><strong>Resultado:</strong> Sus ingresos reales superan consistentemente las predicciones del modelo promedio en aproximadamente 49%.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-secondary" onclick="previousStep()" id="prevBtn" style="display: none;">⬅️ Anterior</button>
+            <button class="btn btn-primary" onclick="nextStep()" id="nextBtn">Siguiente ➡️</button>
+            <button class="btn btn-secondary" onclick="resetDemo()">🔄 Reiniciar</button>
+        </div>
+
+        <div class="explanation">
+            <h4>💡 ¿Por qué dos modelos?</h4>
+            <p><strong>Modelo Completo:</strong> Captura la realidad completa pero puede "sobreajustar" a características específicas que pueden no persistir en el futuro.</p>
+            <p><strong>Modelo Base:</strong> Proporciona una referencia estable y neutral que sirve como "denominador común" para todos los GADs.</p>
+            <p><strong>Factor de Corrección:</strong> Permite personalizar las predicciones manteniendo la estabilidad del modelo base.</p>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentStepNum = 1;
+        let charts = {};
+        let currentGAD = 'urbano';
+        
+        // Navigation functions
+        function nextStep() {
+            if (currentStepNum < 5) {
+                document.getElementById('step' + currentStepNum + '-content').style.display = 'none';
+                document.getElementById('step' + currentStepNum).classList.remove('active');
+                document.getElementById('step' + currentStepNum).classList.add('completed');
+                
+                currentStepNum++;
+                document.getElementById('step' + currentStepNum + '-content').style.display = 'block';
+                document.getElementById('step' + currentStepNum).classList.add('active');
+                
+                document.getElementById('prevBtn').style.display = 'inline-block';
+                if (currentStepNum === 5) {
+                    document.getElementById('nextBtn').textContent = '✅ Completado';
+                    document.getElementById('nextBtn').disabled = true;
+                }
+            }
+        }
+
+        function previousStep() {
+            if (currentStepNum > 1) {
+                document.getElementById('step' + currentStepNum + '-content').style.display = 'none';
+                document.getElementById('step' + currentStepNum).classList.remove('active');
+                
+                currentStepNum--;
+                document.getElementById('step' + currentStepNum + '-content').style.display = 'block';
+                document.getElementById('step' + currentStepNum).classList.remove('completed');
+                document.getElementById('step' + currentStepNum).classList.add('active');
+                
+                if (currentStepNum === 1) {
+                    document.getElementById('prevBtn').style.display = 'none';
+                }
+                document.getElementById('nextBtn').textContent = 'Siguiente ➡️';
+                document.getElementById('nextBtn').disabled = false;
+            }
+        }
+
+        function resetDemo() {
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById('step' + i + '-content').style.display = i === 1 ? 'block' : 'none';
+                document.getElementById('step' + i).classList.remove('active', 'completed');
+            }
+            
+            currentStepNum = 1;
+            document.getElementById('step1').classList.add('completed');
+            document.getElementById('prevBtn').style.display = 'none';
+            document.getElementById('nextBtn').textContent = 'Siguiente ➡️';
+            document.getElementById('nextBtn').disabled = false;
+            
+            // Reset charts
+            if (charts.correction) {
+                showGAD('urbano');
+            }
+            if (charts.realCase) {
+                resetRealChart();
+            }
+        }
+
+        // Data and chart functions
+        function showGAD(gadType) {
+            currentGAD = gadType;
+            const data = gadData[gadType];
+            
+            // Update buttons
+            document.querySelectorAll('.gad-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.gad-btn').forEach(btn => {
+                if (btn.textContent.toLowerCase().includes(gadType.toLowerCase())) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Update UI elements
+            const gadName = document.getElementById('gadName');
+            const factorValue = document.getElementById('factorValue');
+            const interpretation = document.getElementById('interpretation');
+            
+            gadName.textContent = gadType === 'urbano' ? 'GAD Urbano' : 
+                                gadType === 'rural' ? 'GAD Rural' : 'GAD Turístico';
+            factorValue.textContent = data.factor.toFixed(2);
+            const percentage = ((data.factor - 1) * 100).toFixed(0);
+            interpretation.textContent = (percentage >= 0 ? '+' : '') + percentage + '%';
+            
+            // Calculate corrected values
+            const corrected = data.base.map((base, i) => base * data.factor);
+            const factors = data.real.map((real, i) => real / data.base[i]);
+            
+            // Update chart
+            charts.correction.data.datasets = [
+                {
+                    label: 'Valor Real',
+                    data: data.real,
+                    borderColor: data.color,
+                    backgroundColor: 'transparent',
+                    tension: 0.4,
+                    pointRadius: 6,
+                    borderWidth: 3
+                },
+                {
+                    label: 'Predicción Base',
+                    data: data.base,
+                    borderColor: '#9b59b6',
+                    backgroundColor: 'transparent',
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    pointRadius: 6,
+                    borderWidth: 2
+                },
+                {
+                    label: 'Predicción Corregida',
+                    data: corrected,
+                    borderColor: '#27ae60',
+                    backgroundColor: 'transparent',
+                    tension: 0.4,
+                    pointRadius: 8,
+                    borderWidth: 3,
+                    pointStyle: 'rect'
+                },
+                {
+                    label: 'Factor de Corrección',
+                    data: factors,
+                    type: 'bar',
+                    backgroundColor: '#f39c12',
+                    borderColor: '#e67e22',
+                    borderWidth: 1,
+                    yAxisID: 'y1'
+                }
+            ];
+            
+            charts.correction.options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Aplicación del Factor de Corrección',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.dataset.type === 'bar' ? 
+                                        context.parsed.y.toFixed(2) + 'x' : 
+                                        context.parsed.y.toFixed(0);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Ingresos (índice base 100)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Factor de Corrección'
+                        },
+                        min: 0,
+                        max: 2,
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            };
+            
+            charts.correction.update();
+        }
+
+        function animateCorrection() {
+            const data = gadData[currentGAD];
+            
+            // Reset corrected values
+            charts.correction.data.datasets[2].data = data.base.map(() => null);
+            charts.correction.update();
+            
+            // Animate each point
+            data.base.forEach((_, i) => {
+                setTimeout(() => {
+                    charts.correction.data.datasets[2].data[i] = data.base[i] * data.factor;
+                    charts.correction.update();
+                }, 500 * (i + 1));
+            });
+        }
+
+        function resetCorrectionChart() {
+            const data = gadData[currentGAD];
+            const corrected = data.base.map(base => base * data.factor);
+            charts.correction.data.datasets[2].data = corrected;
+            charts.correction.update();
+        }
+
+        function animateRealChart() {
+            // Reset data
+            charts.realCase.data.datasets[2].data = [null, null, null, null, null, null, null];
+            charts.realCase.update('none');
+            
+            // Animate corrected predictions
+            setTimeout(() => {
+                charts.realCase.data.datasets[2].data[5] = 5069600; // 2025
+                charts.realCase.update('active');
+            }, 500);
+            
+            setTimeout(() => {
+                charts.realCase.data.datasets[2].data[6] = 5294050; // 2026
+                charts.realCase.update('active');
+            }, 1000);
+            
+            // Highlight difference in 2024
+            setTimeout(() => {
+                charts.realCase.data.datasets[0].pointRadius = [6, 6, 6, 6, 15, 6, 6];
+                charts.realCase.data.datasets[1].pointRadius = [6, 6, 6, 6, 15, 6, 6];
+                charts.realCase.update('active');
+            }, 1500);
+        }
+
+        function resetRealChart() {
+            charts.realCase.data.datasets[2].data = realCaseData.correctedModel;
+            charts.realCase.data.datasets[0].pointRadius = 8;
+            charts.realCase.data.datasets[1].pointRadius = 6;
+            charts.realCase.update();
+        }
+
+        // Data definitions
+        const years = [2018, 2019, 2020, 2021, 2022, 2023, 2024];
+        const realCaseYears = ['2020', '2021', '2022', '2023', '2024', '2025', '2026'];
+        
+        const gadData = {
+            urbano: {
+                real: [100, 108, 95, 112, 125, 138, 142],
+                base: [100, 105, 88, 108, 118, 128, 132],
+                complete: [100, 107, 94, 111, 124, 137, 141],
+                factor: 1.20,
+                color: '#e74c3c'
+            },
+            rural: {
+                real: [80, 82, 75, 85, 88, 92, 95],
+                base: [100, 105, 88, 108, 118, 128, 132],
+                complete: [80, 81, 74, 84, 87, 91, 94],
+                factor: 0.85,
+                color: '#27ae60'
+            },
+            turistico: {
+                real: [90, 95, 70, 110, 85, 125, 105],
+                base: [100, 105, 88, 108, 118, 128, 132],
+                complete: [90, 94, 69, 109, 84, 124, 104],
+                factor: 1.05,
+                color: '#3498db'
+            }
+        };
+
+        const realCaseData = {
+            realValues: [3800000, 4100000, 4450000, 4600000, 4875338, null, null],
+            baseModel: [2800000, 3000000, 3150000, 3200000, 3269017, 3400000, 3550000],
+            correctedModel: [null, null, null, null, null, 5069600, 5294050],
+            correctionFactor: 1.4914
+        };
+
+        function initializeCharts() {
+            // Initial data chart
+            const ctx1 = document.getElementById('dataChart').getContext('2d');
+            charts.data = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        {
+                            label: 'GAD Urbano',
+                            data: gadData.urbano.real,
+                            borderColor: gadData.urbano.color,
+                            backgroundColor: gadData.urbano.color + '20',
+                            tension: 0.4,
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'GAD Rural',
+                            data: gadData.rural.real,
+                            borderColor: gadData.rural.color,
+                            backgroundColor: gadData.rural.color + '20',
+                            tension: 0.4,
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'GAD Turístico',
+                            data: gadData.turistico.real,
+                            borderColor: gadData.turistico.color,
+                            backgroundColor: gadData.turistico.color + '20',
+                            tension: 0.4,
+                            pointRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Datos Históricos Reales de Ingresos por GAD',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Ingresos (índice base 100)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Complete model chart
+            const ctx2 = document.getElementById('completeModelChart').getContext('2d');
+            charts.complete = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        {
+                            label: 'Real - GAD Urbano',
+                            data: gadData.urbano.real,
+                            borderColor: gadData.urbano.color,
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            pointStyle: 'circle',
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'Predicción Completa - GAD Urbano',
+                            data: gadData.urbano.complete,
+                            borderColor: gadData.urbano.color,
+                            backgroundColor: 'transparent',
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            pointStyle: 'triangle',
+                            pointRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Modelo Completo: Ajuste Específico por GAD',
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Ingresos (índice base 100)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Base model chart
+            const ctx3 = document.getElementById('baseModelChart').getContext('2d');
+            charts.base = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        {
+                            label: 'Real - GAD Urbano',
+                            data: gadData.urbano.real,
+                            borderColor: gadData.urbano.color,
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'Real - GAD Rural',
+                            data: gadData.rural.real,
+                            borderColor: gadData.rural.color,
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'Predicción Base (Común)',
+                            data: gadData.urbano.base,
+                            borderColor: '#9b59b6',
+                            backgroundColor: 'transparent',
+                            borderDash: [10, 5],
+                            tension: 0.4,
+                            pointStyle: 'rect',
+                            pointRadius: 8,
+                            borderWidth: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Modelo Base: Línea Neutral Común',
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Ingresos (índice base 100)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Correction factor chart (ACTUALIZADO)
+            const ctx4 = document.getElementById('correctionChart').getContext('2d');
+            charts.correction = new Chart(ctx4, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Aplicación del Factor de Corrección',
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Ingresos (índice base 100)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Real case chart
+            const ctx5 = document.getElementById('realCaseChart').getContext('2d');
+            charts.realCase = new Chart(ctx5, {
+                type: 'line',
+                data: {
+                    labels: realCaseYears,
+                    datasets: [
+                        {
+                            label: 'Valores Reales (Histórico)',
+                            data: realCaseData.realValues,
+                            borderColor: '#27ae60',
+                            backgroundColor: '#27ae60',
+                            pointBackgroundColor: '#27ae60',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 3,
+                            pointRadius: 8,
+                            tension: 0.4,
+                            borderWidth: 4
+                        },
+                        {
+                            label: 'Modelo Base (Predicción Neutral)',
+                            data: realCaseData.baseModel,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'transparent',
+                            pointBackgroundColor: '#e74c3c',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            borderDash: [10, 5]
+                        },
+                        {
+                            label: 'Predicción Corregida (Base × 1.49)',
+                            data: realCaseData.correctedModel,
+                            borderColor: '#6c5ce7',
+                            backgroundColor: '#6c5ce7',
+                            pointBackgroundColor: '#6c5ce7',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 3,
+                            pointRadius: 10,
+                            tension: 0.4,
+                            borderWidth: 4,
+                            pointStyle: 'rectRot'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Evolución Temporal: Real vs Modelo Base vs Predicción Corregida',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            padding: 20
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: '#667eea',
+                            borderWidth: 2,
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.parsed.y;
+                                    if (value) {
+                                        return context.dataset.label + ': ' + value.toLocaleString();
+                                    }
+                                    return null;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 2500000,
+                            title: {
+                                display: true,
+                                text: 'Ingresos (USD)',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000000).toFixed(1) + 'M';
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Año',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            hoverRadius: 12
+                        }
+                    }
+                }
+            });
+
+            showGAD('urbano');
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            initializeCharts();
+        });
+    </script>
+</body>
+</html>
